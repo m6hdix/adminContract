@@ -2,9 +2,9 @@
   "$schema": "https://raw.githubusercontent.com/tact-lang/tact/main/src/config/configSchema.json",
   "projects": [
     {
-      "name": "M6hdix",
+      "name": "MahdiToken",
       "path": "contracts/m6hdix.tact",
-      "output": "build\\M6hdix",
+      "output": "build\\MahdiToken",
       "options": {
         "debug": false,
         "external": false

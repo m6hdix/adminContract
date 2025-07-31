@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mahdi Token (MHD) Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    <style>
+        .loading {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .success {
+            background-color: #10b981;
+        }
+        .error {
+            background-color: #ef4444;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Mahdi Token (MHD) Admin Panel</h1>
+                    <p class="text-gray-600 mt-1">Manage your TON blockchain token</p>
+                </div>
+                <div id="wallet-connection" class="flex items-center space-x-4">
+                    <button id="connect-wallet" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                        Connect Wallet
+                    </button>
+                    <div id="wallet-info" class="hidden">
+                        <span id="wallet-address" class="text-sm text-gray-600"></span>
+                        <button id="disconnect-wallet" class="ml-2 text-red-600 hover:text-red-800">
+                            Disconnect
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Total Supply</h3>
+                <p id="total-supply" class="text-2xl font-bold text-blue-600">Loading...</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Admin Balance</h3>
+                <p id="admin-balance" class="text-2xl font-bold text-green-600">Loading...</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Accumulated Fees</h3>
+                <p id="accumulated-fees" class="text-2xl font-bold text-purple-600">Loading...</p>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Transfer Status</h3>
+                <p id="transfer-status" class="text-2xl font-bold">Loading...</p>
+            </div>
+        </div>
+
+        <!-- Control Panels -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Transfer Controls -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Transfer Controls</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Current Status</label>
+                        <div class="flex items-center">
+                            <span id="transfer-status-text" class="mr-2">Enabled</span>
+                            <button id="toggle-transfers" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                                Disable Transfers
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fee Management -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Fee Management</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Current Fee (%)</label>
+                        <div class="flex items-center">
+                            <span id="current-fee" class="mr-2">0.1%</span>
+                            <input type="number" id="new-fee" min="0" max="10" step="0.01" class="border rounded-md px-3 py-2 w-24 mr-2" placeholder="0.1">
+                            <button id="update-fee" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
+                                Update
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <button id="withdraw-fees" class="w-full bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 transition-colors">
+                            Withdraw Accumulated Fees
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Token Management -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Token Management</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Mint Tokens</label>
+                        <div class="flex items-center">
+                            <input type="number" id="mint-amount" class="border rounded-md px-3 py-2 w-32 mr-2" placeholder="Amount">
+                            <input type="text" id="mint-address" class="border rounded-md px-3 py-2 flex-1 mr-2" placeholder="Address">
+                            <button id="mint-tokens" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors">
+                                Mint
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Burn Tokens</label>
+                        <div class="flex items-center">
+                            <input type="number" id="burn-amount" class="border rounded-md px-3 py-2 w-32 mr-2" placeholder="Amount">
+                            <input type="text" id="burn-address" class="border rounded-md px-3 py-2 flex-1 mr-2" placeholder="Address">
+                            <button id="burn-tokens" class="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors">
+                                Burn
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Controls -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-900 mb-4">Admin Controls</h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Change Admin</label>
+                        <div class="flex items-center">
+                            <input type="text" id="new-admin-address" class="border rounded-md px-3 py-2 flex-1 mr-2" placeholder="New admin address">
+                            <button id="change-admin" class="bg-orange-600 text-white px-4 py-2 rounded-md hover:bg-orange-700 transition-colors">
+                                Change
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">User Freeze Control</label>
+                        <div class="flex items-center">
+                            <input type="text" id="freeze-address" class="border rounded-md px-3 py-2 flex-1 mr-2" placeholder="Address to freeze/unfreeze">
+                            <button id="toggle-freeze" class="bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors">
+                                Toggle Freeze
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transaction History -->
+        <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Recent Transactions</h2>
+            <div id="transaction-history" class="text-gray-600">
+                <p>No transactions yet. Connect your wallet to see activity.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="fixed top-4 right-4 p-4 rounded-md text-white hidden z-50">
+        <div class="flex items-center">
+            <span id="notification-message"></span>
+            <button onclick="hideNotification()" class="ml-4 text-white hover:text-gray-200">×</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONTRACT_ADDRESS = 'YOUR_CONTRACT_ADDRESS_HERE';
+        
+        // State
+        let tonConnectUI = null;
+        let contract = null;
+        
+        // Initialize TON Connect
+        async function initTonConnect() {
+            tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+                manifestUrl: 'https://yourdomain.com/tonconnect-manifest.json',
+                buttonRootId: 'connect-wallet'
+            });
+
+            tonConnectUI.onStatusChange((wallet) => {
+                if (wallet) {
+                    document.getElementById('wallet-info').classList.remove('hidden');
+                    document.getElementById('connect-wallet').classList.add('hidden');
+                    document.getElementById('wallet-address').textContent = 
+                        wallet.account.address.slice(0, 6) + '...' + wallet.account.address.slice(-4);
+                    loadContractData();
+                } else {
+                    document.getElementById('wallet-info').classList.add('hidden');
+                    document.getElementById('connect-wallet').classList.remove('hidden');
+                }
+            });
+        }
+
+        // Utility functions
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const messageEl = document.getElementById('notification-message');
+            
+            messageEl.textContent = message;
+            notification.className = `fixed top-4 right-4 p-4 rounded-md text-white z-50 ${type}`;
+            notification.classList.remove('hidden');
+            
+            setTimeout(hideNotification, 5000);
+        }
+
+        function hideNotification() {
+            document.getElementById('notification').classList.add('hidden');
+        }
+
+        function formatAmount(amount) {
+            return (Number(amount) / 1e9).toLocaleString() + ' MHD';
+        }
+
+        // Contract interaction functions
+        async function loadContractData() {
+            try {
+                // This would be replaced with actual contract calls
+                // For now, we'll use mock data
+                setTimeout(() => {
+                    document.getElementById('total-supply').textContent = formatAmount('1000000000000000');
+                    document.getElementById('admin-balance').textContent = formatAmount('1000000000000000');
+                    document.getElementById('accumulated-fees').textContent = formatAmount('100000000');
+                    document.getElementById('transfer-status').textContent = 'Enabled';
+                    document.getElementById('transfer-status').className = 'text-2xl font-bold text-green-600';
+                    document.getElementById('current-fee').textContent = '0.1%';
+                }, 1000);
+            } catch (error) {
+                console.error('Error loading contract data:', error);
+                showNotification('Error loading contract data', 'error');
+            }
+        }
+
+        async function toggleTransfers() {
+            if (!tonConnectUI?.wallet) {
+                showNotification('Please connect your wallet first', 'error');
+                return;
+            }
+
+            try {
+                const currentStatus = document.getElementById('transfer-status').textContent === 'Enabled';
+                
+                // This would be replaced with actual contract call
+                showNotification(`Transfers ${currentStatus ? 'disabled' : 'enabled'} successfully`);
+                
+                // Update UI
+                document.getElementById('transfer-status').textContent = currentStatus ? 'Disabled' : 'Enabled';
+                document.getElementById('transfer-status').className = currentStatus ? 
+                    'text-2xl font-bold text-red-600' : 'text-2xl font-bold text-green-600';
+                document.getElementById('toggle-transfers').textContent = currentStatus ? 
+                    'Enable Transfers' : 'Disable Transfers';
+                document.getElementById('transfer-status-text').textContent = currentStatus ? 'Disabled' : 'Enabled';
+            } catch (error) {
+                showNotification('Error toggling transfers', 'error');
+            }
+        }
+
+        async function updateFee() {
+            if (!tonConnectUI?.wallet) {
+                showNotification('Please connect your wallet first', 'error');
+                return;
+            }
+
+            const newFee = document.getElementById('new-fee').value;
+            if (!newFee || newFee < 0 || newFee > 10) {
+                showNotification('Please enter a valid fee percentage (0-10%)', 'error');
+                return;
+            }
+
+            try {
+                // This would be replaced with actual contract call
+                showNotification(`Fee updated to ${newFee}%`);
+                document.getElementById('current-fee').textContent = newFee + '%';
+                document.getElementById('new-fee').value = '';
+            } catch (error) {
+                showNotification('Error updating fee', 'error');
+            }
+        }
+
+        async function withdrawFees() {
+            if (!tonConnectUI?.wallet) {
+                showNotification('Please connect your wallet first', 'error');
+                return;
+            }
+
+            try {
+                // This would be replaced with actual contract call
+                showNotification('Fees withdrawn successfully');
+                loadContractData();
+            } catch (error) {
+                showNotification('Error withdrawing fees', 'error');
+            }
+        }
+
+        async function mintTokens() {
+            if (!tonConnectUI?.wallet) {
+                showNotification('Please connect your wallet first', 'error');
+                return;
+            }
+
+            const amount = document.getElementById('mint-amount').value;
+            const address = document.getElementById('mint-address').value;
+            
+            if (!amount || !address) {
+                showNotification('Please enter amount and address', 'error');
+                return;
+            }
+
+            try {
+                // This would be replaced with actual contract call
+                showNotification(`${amount} MHD minted to ${address}`);
+                document.getElementById('mint-amount').value = '';
+                document.getElementById('mint-address').value = '';
+                loadContractData();
+            } catch (error) {
+                showNotification('Error minting tokens', 'error');
+            }
+        }
+
+        async function burnTokens() {
+            if (!tonConnectUI?.wallet) {
+                showNotification('Please connect your wallet first', 'error');
+                return;
+            }
+
+            const amount = document.getElementById('burn-amount').value;
+            const address = document.getElementById('burn-address').value;
+            
+            if (!amount || !address) {
+                showNotification('Please enter amount and address', 'error');
+                return;
+            }
+
+            try {
+                // This would be replaced with actual contract call
+                showNotification(`${amount} MHD burned from ${address}`);
+                document.getElementById('burn-amount').value = '';
+                document.getElementById('burn-address').value = '';
+                loadContractData();
+            } catch (error) {
+                showNotification('Error burning tokens', 'error');
+            }
+        }
+
+        async function changeAdmin() {
+            if (!tonConnectUI?.wallet) {
+                showNotification('Please connect your wallet first', 'error');
+                return;
+            }
+
+            const newAdmin = document.getElementById('new-admin-address').value;
+            if (!newAdmin) {
+                showNotification('Please enter new admin address', 'error');
+                return;
+            }
+
+            try {
+                // This would be replaced with actual contract call
+                showNotification(`Admin changed to ${newAdmin}`);
+                document.getElementById('new-admin-address').value = '';
+                loadContractData();
+            } catch (error) {
+                showNotification('Error changing admin', 'error');
+            }
+        }
+
+        async function toggleFreeze() {
+            if (!tonConnectUI?.wallet) {
+                showNotification('Please connect your wallet first', 'error');
+                return;
+            }
+
+            const address = document.getElementById('freeze-address').value;
+            if (!address) {
+                showNotification('Please enter address to freeze/unfreeze', 'error');
+                return;
+            }
+
+            try {
+                // This would be replaced with actual contract call
+                showNotification(`Freeze status toggled for ${address}`);
+                document.getElementById('freeze-address').value = '';
+            } catch (error) {
+                showNotification('Error toggling freeze status', 'error');
+            }
+        }
+
+        // Event listeners
+        document.getElementById('connect-wallet').addEventListener('click', () => {
+            tonConnectUI.openModal();
+        });
+
+        document.getElementById('disconnect-wallet').addEventListener('click', () => {
+            tonConnectUI.disconnect();
+        });
+
+        document.getElementById('toggle-transfers').addEventListener('click', toggleTransfers);
+        document.getElementById('update-fee').addEventListener('click', updateFee);
+        document.getElementById('withdraw-fees').addEventListener('click', withdrawFees);
+        document.getElementById('mint-tokens').addEventListener('click', mintTokens);
+        document.getElementById('burn-tokens').addEventListener('click', burnTokens);
+        document.getElementById('change-admin').addEventListener('click', changeAdmin);
+        document.getElementById('toggle-freeze').addEventListener('click', toggleFreeze);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initTonConnect();
+        });
+    </script>
+</body>
+</html>

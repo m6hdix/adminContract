@@ -1,19 +1,25 @@
 import { toNano } from '@ton/core';
-import { M6hdix } from '../build/M6hdix/M6hdix_M6hdix';
+import { MahdiToken } from '../build/MahdiToken/MahdiToken_MahdiToken';
 import { NetworkProvider } from '@ton/blueprint';
 
 export async function run(provider: NetworkProvider) {
-    const m6hdix = provider.open(await M6hdix.fromInit(BigInt(Math.floor(Math.random() * 10000)), 0n));
+    const token = provider.open(await MahdiToken.fromInit());
 
-    await m6hdix.send(
+    await token.send(
         provider.sender(),
         {
             value: toNano('0.05'),
         },
-        null,
+        {
+            $$type: 'Deploy',
+            queryId: 0n,
+        }
     );
 
-    await provider.waitForDeploy(m6hdix.address);
+    await provider.waitForDeploy(token.address);
 
-    console.log('ID', await m6hdix.getId());
+    console.log('MahdiToken deployed at:', token.address.toString());
+    console.log('Contract owner:', provider.sender().address?.toString());
+    console.log('Total supply:', (await token.getGetTotalSupply()).toString());
+    console.log('Token metadata:', await token.getGetMetadata());
 }
